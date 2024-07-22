@@ -1,0 +1,12 @@
+const express = require('express');
+const router = express.Router();
+const { createTrip, getTripById, joinTrip, getAllTrips } = require('../controllers/tripController');
+const { protect } = require('../middleware/authMiddleware');
+
+// Rutas para viajes
+router.get('/get/trips', getAllTrips);
+router.post('/create', createTrip);
+router.get('/:id', getTripById);
+router.post('/join', joinTrip);
+
+module.exports = router;
