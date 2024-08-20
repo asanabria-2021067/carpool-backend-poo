@@ -2,10 +2,11 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { generarJWT } = require('../helpers/generarJWT');
+const Trip = require('../models/Trip');
 
 // Registro de usuario
 const registerUser = async (req, res) => {
-  const { firstName, lastName, studentId, email, password, latitude, longitude, img, licence, role } = req.body;
+  const { firstName, lastName, studentId, email, password, phone, latitude, longitude, img, licence, role } = req.body;
 
   if (!latitude || !longitude || typeof latitude !== 'number' || typeof longitude !== 'number') {
     return res.status(400).json({ message: 'Invalid coordinates' });
@@ -27,6 +28,7 @@ const registerUser = async (req, res) => {
       studentId,
       email,
       password: hashedPassword,
+      phone,
       location: {
         type: 'Point',
         coordinates: [longitude, latitude]
@@ -49,6 +51,7 @@ const registerUser = async (req, res) => {
           lastName: user.lastName,
           studentId: user.studentId,
           email: user.email,
+          phone: user.phone,
           location: user.location,
           img: user.img,
           licence: user.licence,
@@ -62,6 +65,64 @@ const registerUser = async (req, res) => {
     return res.status(500).json({ message: 'Server error', error });
   }
 };
+
+const updateMyProfile = async (req, res) => {
+  const { firstName, lastName, studentId, email, password, phone, img, licence, role, longitude, latitude } = req.body;
+  const id = req.usuario.id;
+
+  try {
+    const Usuario = await User.findById(id);
+    if (!Usuario) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const userWithSameEmail = await User.findOne({ email });
+
+    if (userWithSameEmail && userWithSameEmail.id !== id) {
+      return res.status(400).json({ message: 'Email already in use by another user' });
+    }
+
+    // Hash the password if it is provided
+    let hashedPassword;
+    if (password) {
+      const salt = await bcrypt.genSalt(10);
+      hashedPassword = await bcrypt.hash(password, salt);
+    }
+
+    // Update user information
+    Usuario.firstName = firstName || Usuario.firstName;
+    Usuario.lastName = lastName || Usuario.lastName;
+    Usuario.studentId = studentId || Usuario.studentId;
+    Usuario.email = email || Usuario.email;
+    Usuario.phone = phone || Usuario.phone;
+    Usuario.password = hashedPassword || Usuario.password;
+    Usuario.img = img || Usuario.img;
+    Usuario.licence = licence || Usuario.licence;
+    Usuario.role = role || Usuario.role;
+    Usuario.location = { type: 'Point', coordinates: [longitude, latitude] } || Usuario.location;
+
+    await Usuario.save();
+
+    return res.status(200).json({
+      user: {
+        id: Usuario._id,
+        firstName: Usuario.firstName,
+        lastName: Usuario.lastName,
+        studentId: Usuario.studentId,
+        email: Usuario.email,
+        phone: Usuario.phone,
+        location: Usuario.location,
+        img: Usuario.img,
+        licence: Usuario.licence,
+        role: Usuario.role
+      },
+      message: 'Profile updated successfully'
+    });
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error', error });
+  }
+};
+
 
 // Inicio de sesión de usuario
 const loginUser = async (req, res) => {
@@ -126,6 +187,12 @@ const getUserById = async (req, res) => {
 const radarLocation = async (req, res) => {
   const id = req.usuario.id;
   const Usuario = await User.findById(id);
+
+  // Definir `now` como la fecha y hora actuales
+  const now = new Date();
+
+  const tideDriver = await Trip.find({ driver: id, startTime: { $gte: now }}).sort({ startTime: 1 }); 
+
   if (!Usuario.location.coordinates || !Usuario.location.coordinates.length) {
     return res.status(400).json({ message: 'Coordinates are required' });
   }
@@ -140,8 +207,8 @@ const radarLocation = async (req, res) => {
   // Aproximación de 1 km en grados (varía según la latitud)
   const kmInLongitudeDegree = 111.32 * Math.cos(latitude * (Math.PI / 180));
   const kmInLatitudeDegree = 111.32;
-  const deltaLongitude = 1 / kmInLongitudeDegree;
-  const deltaLatitude = 1 / kmInLatitudeDegree;
+  const deltaLongitude = 10 / kmInLongitudeDegree;
+  const deltaLatitude = 10 / kmInLatitudeDegree;
 
   try {
     const users = await User.find({
@@ -164,6 +231,7 @@ const radarLocation = async (req, res) => {
     return res.status(500).json({ message: 'Server error', error });
   }
 };
+
 
 const updateUserLocation = async (req, res) => {
   const userId = req.usuario.id;
@@ -199,5 +267,6 @@ module.exports = {
   getUserById,
   radarLocation,
   updateUserLocation,
-  getAllUsers
+  getAllUsers,
+  updateMyProfile
 };

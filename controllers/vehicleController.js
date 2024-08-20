@@ -1,40 +1,37 @@
+const User = require('../models/User');
 const Vehicle = require('../models/Vehicle');
 
 // Crear vehículo
 const createVehicle = async (req, res) => {
-  const { owner, type, capacity, plateNumber } = req.body;
-
-  try {
+  const id = req.usuario.id;
+  const owner = User.findById(id);
+  const { type, capacity, plateNumber, model } = req.body;
     const vehicle = await Vehicle.create({
-      owner,
+      owner: id,
       type,
       capacity,
       plateNumber,
+      model,
     });
 
     res.status(201).json(vehicle);
-  } catch (error) {
-    res.status(500).json({ message: 'Server error' });
-  }
 };
 
 const getAllVehicles = async (req, res) => {
-  try {
     const vehicle = await Vehicle.find().populate('owner', 'firstName lastName email');
     if (!vehicle) {
       return res.status(404).json({ message: 'Vehicle not found' });
     }
     res.json(vehicle);
-  } catch (error) {
-    res.status(500).json({ message: 'Server error' });
-  }
 };
 
 
 // Obtener vehículo por ID
 const getVehicleById = async (req, res) => {
+  const id = req.usuario.id;
+  const owner = User.findById(id);
   try {
-    const vehicle = await Vehicle.findById(req.params.id).populate('owner', 'firstName lastName email');
+    const vehicle = await Vehicle.findOne({owner: id}).populate('owner', 'firstName lastName email');
     if (!vehicle) {
       return res.status(404).json({ message: 'Vehicle not found' });
     }
@@ -47,9 +44,10 @@ const getVehicleById = async (req, res) => {
 // Actualizar vehículo
 const updateVehicle = async (req, res) => {
   const { type, capacity, plateNumber } = req.body;
-
+  const id = req.usuario.id;
+  const owner = User.findById(id);
   try {
-    const vehicle = await Vehicle.findById(req.params.id);
+    const vehicle = await Vehicle.findOne({owner: id});
 
     if (!vehicle) {
       return res.status(404).json({ message: 'Vehicle not found' });
@@ -69,8 +67,9 @@ const updateVehicle = async (req, res) => {
 
 // Eliminar vehículo
 const deleteVehicle = async (req, res) => {
+  const id = req.usuario.id;
   try {
-    const vehicle = await Vehicle.findById(req.params.id);
+    const vehicle = await Vehicle.findOne({owner: id});
 
     if (!vehicle) {
       return res.status(404).json({ message: 'Vehicle not found' });
@@ -89,4 +88,5 @@ module.exports = {
   getVehicleById,
   updateVehicle,
   deleteVehicle,
+  getAllVehicles,
 };

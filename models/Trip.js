@@ -11,10 +11,14 @@ const tripSchema = new mongoose.Schema({
     lat: { type: Number, required: true },
     lng: { type: Number, required: true }
   },
-  startTime: { type: Date, required: true },
+  startTime: { type: Date },
   seatsAvailable: { type: Number, required: true },
   passengers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-  price: { type: Number, default: 0 }
+  price: { type: Number, default: 0 },
+  accepted: {type: Boolean, default: false},
+  completed: { type: Boolean, default: false},
+  securityCode: { type: Number, default: () => Math.floor(1000 + Math.random() * 9000) },
+  createdAt: { type: Date, default: Date.now },
 });
 
 const Trip = mongoose.model('Trip', tripSchema);

@@ -10,9 +10,7 @@ const protect = async (req = request, res =response, next) => {
       }
       try {
         const { uid } = jwt.verify( token, process.env.JWT_SECRET);
-        console.log(uid);
         const usuario = await User.findById( uid );
-        console.log(usuario);
         if ( !usuario ) {
             return res.status(401).json({
                 msg: 'Token no valido - usuario no existe en DB fisicamente'

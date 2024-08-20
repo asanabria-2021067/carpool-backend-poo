@@ -5,7 +5,7 @@ const { protect } = require('../middleware/authMiddleware');
 
 // Rutas para viajes
 router.get('/get/trips', getAllTrips);
-router.post('/create', createTrip);
+router.post('/create',[protect], createTrip);
 router.get('/:id', getTripById);
 router.post('/join', joinTrip);
 
