@@ -35,7 +35,7 @@ const getVehicleById = async (req, res) => {
   const id = req.usuario.id;
   const owner = User.findById(id);
   try {
-    const vehicle = await Vehicle.findOne({owner: id}).populate('owner', 'firstName lastName email');
+    const vehicle = await Vehicle.find({owner: id}).populate('owner', 'firstName lastName email');
     if (!vehicle) {
       return res.status(404).json({ message: 'Vehicle not found' });
     }
@@ -61,6 +61,7 @@ const updateVehicle = async (req, res) => {
     vehicle.type = type || vehicle.type;
     vehicle.capacity = capacity || vehicle.capacity;
     vehicle.plateNumber = plateNumber || vehicle.plateNumber;
+    vechicle.carImage = carImage || vehicle.carImage;
 
     await vehicle.save();
 
