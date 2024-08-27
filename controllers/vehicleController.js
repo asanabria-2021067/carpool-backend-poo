@@ -52,7 +52,7 @@ const getVehicleById = async (req, res) => {
 
 // Actualizar vehículo
 const updateVehicle = async (req, res) => {
-  const { type, capacity, plateNumber, carImage } = req.body;
+  const { model, type, capacity, plateNumber, carImage } = req.body;
   const id = req.usuario.id;
   const owner = User.findById(id);
   if (owner) {
@@ -62,6 +62,7 @@ const updateVehicle = async (req, res) => {
       return res.status(404).json({ message: "Vehicle not found" });
     }
 
+    vehicle.model = model || vehicle.model;
     vehicle.type = type || vehicle.type;
     vehicle.capacity = capacity || vehicle.capacity;
     vehicle.plateNumber = plateNumber || vehicle.plateNumber;
