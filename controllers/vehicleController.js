@@ -5,13 +5,17 @@ const Vehicle = require('../models/Vehicle');
 const createVehicle = async (req, res) => {
   const id = req.usuario.id;
   const owner = User.findById(id);
-  const { type, capacity, plateNumber, model } = req.body;
+  if (!owner) {
+    return res.status(400).json({ message: 'User not found' });
+  }
+  const { type, capacity, plateNumber, model, carImage  } = req.body;
     const vehicle = await Vehicle.create({
       owner: id,
-      type,
-      capacity,
-      plateNumber,
-      model,
+      type: type,
+      capacity: capacity,
+      plateNumber: plateNumber,
+      model: model,
+      carImage: carImage,
     });
 
     res.status(201).json(vehicle);
