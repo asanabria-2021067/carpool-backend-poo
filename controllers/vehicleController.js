@@ -61,7 +61,7 @@ const updateVehicle = async (req, res) => {
     vehicle.type = type || vehicle.type;
     vehicle.capacity = capacity || vehicle.capacity;
     vehicle.plateNumber = plateNumber || vehicle.plateNumber;
-    vechicle.carImage = carImage || vehicle.carImage;
+    vehicle.carImage = carImage || vehicle.carImage;
 
     await vehicle.save();
 
