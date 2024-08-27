@@ -52,7 +52,7 @@ const getVehicleById = async (req, res) => {
 
 // Actualizar vehículo
 const updateVehicle = async (req, res) => {
-  const { type, capacity, plateNumber } = req.body;
+  const { type, capacity, plateNumber, carImage } = req.body;
   const id = req.usuario.id;
   const owner = User.findById(id);
   if (owner) {
