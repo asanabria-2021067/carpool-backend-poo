@@ -6,8 +6,8 @@ const { protect } = require('../middleware/authMiddleware');
 // Rutas para vehículos
 router.get('/all', getAllVehicles);
 router.post('/create',[protect], createVehicle);
-router.get('/:id',[protect], getVehicleById);
-router.put('/:id',[protect], updateVehicle);
+router.get('/MyVehicle',[protect], getVehicleById);
+router.put('/edit',[protect], updateVehicle);
 router.delete('/:id',[protect], deleteVehicle);
 
 module.exports = router;

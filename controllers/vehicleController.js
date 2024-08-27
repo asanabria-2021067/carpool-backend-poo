@@ -47,6 +47,7 @@ const updateVehicle = async (req, res) => {
   const id = req.usuario.id;
   const owner = User.findById(id);
   try {
+    if(owner){
     const vehicle = await Vehicle.findOne({owner: id});
 
     if (!vehicle) {
@@ -60,6 +61,9 @@ const updateVehicle = async (req, res) => {
     await vehicle.save();
 
     res.json(vehicle);
+  }else{
+    return res.status(403).json({ message: 'Vehicle not found' });
+  }
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }

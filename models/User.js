@@ -18,7 +18,7 @@ const userSchema = new mongoose.Schema({
     coordinates: {
       type: [Number],
       required: false,
-      default: [0, 0],
+      default: [14.603, -90.48],
       validate: {
         validator: function (value) {
           return value.length === 2 && typeof value[0] === 'number' && typeof value[1] === 'number';
