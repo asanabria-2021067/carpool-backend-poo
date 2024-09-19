@@ -11,6 +11,10 @@ const Vehicle = require('../models/Vehicle');
 const createTrip = async (req, res) => {
   const id = req.usuario.id;
   const driver = await User.findById(id);
+  const startLocation = {
+    type: 'Point',
+    coordinates: driver.location.coordinates // Usamos la ubicación del conductor
+  };
   const vehicle = await Vehicle.findOne({owner: id});
   if (!vehicle) {
     return res.status(400).json({ message: 'Vehicle not exists' });
@@ -22,7 +26,7 @@ const createTrip = async (req, res) => {
     return res.status(400).json({ message: 'The user have driver role' });
   }
   if(driver.role == "Conductor") {
-    const {startLocation, endLocation, seatsAvailable, passengers } = req.body;
+    const {endLocation, seatsAvailable, passengers } = req.body;
     const startTime = Date.now();
     try {
       const trip = await Trip.create({
