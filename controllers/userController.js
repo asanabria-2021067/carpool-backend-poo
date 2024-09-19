@@ -124,7 +124,6 @@ const updateMyProfile = async (req, res) => {
 };
 
 
-// Inicio de sesión de usuario
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
@@ -141,20 +140,36 @@ const loginUser = async (req, res) => {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
-    const token = await generarJWT( user.id, user.role );
+    // Obtener coordenadas de la solicitud
+    const { latitude, longitude } = req.body; // Suponiendo que envías latitud y longitud desde el frontend
+
+    if (latitude && longitude) {
+      // Verificar que sean números válidos
+      if (!isNaN(parseFloat(latitude)) && !isNaN(parseFloat(longitude))) {
+        // Actualizar la ubicación del usuario en la base de datos
+        user.location = {
+          type: 'Point',
+          coordinates: [parseFloat(longitude), parseFloat(latitude)] // Longitude first, then Latitude
+        };
+
+        await user.save(); // Guardar la nueva ubicación en la base de datos
+      }
+    }
+
+    const token = await generarJWT(user.id, user.role);
 
     return res.json({
       token,
       user: {
-          id: user._id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          studentId: user.studentId,
-          email: user.email,
-          location: user.location,
-          img: user.img,
-          licence: user.licence,
-          role: user.role
+        id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        studentId: user.studentId,
+        email: user.email,
+        location: user.location,
+        img: user.img,
+        licence: user.licence,
+        role: user.role,
       },
     });
   } catch (error) {
@@ -191,7 +206,22 @@ const radarLocation = async (req, res) => {
   // Definir `now` como la fecha y hora actuales
   const now = new Date();
 
-  const tideDriver = await Trip.find({ driver: id, startTime: { $gte: now }}).sort({ startTime: 1 }); 
+  // Definir el límite de 5 horas antes
+  const fiveHoursAgo = new Date(now.getTime() - 5 * 60 * 60 * 1000);
+
+  // Filtrar los viajes del conductor que empiezan hoy y no antes de 5 horas
+  const tideDriver = await Trip.find({
+    driver: id,
+    startTime: {
+      $gte: fiveHoursAgo,  // Viajes que comiencen después de hace 5 horas
+      $lt: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)  // Viajes solo del día de hoy
+    }
+  }).sort({ startTime: 1 });
+
+  // Validar si el conductor tiene viajes
+  if (!tideDriver.length) {
+    return res.status(404).json({ message: 'No trips found for the driver' });
+  }
 
   if (!Usuario.location.coordinates || !Usuario.location.coordinates.length) {
     return res.status(400).json({ message: 'Coordinates are required' });
@@ -211,6 +241,7 @@ const radarLocation = async (req, res) => {
   const deltaLatitude = 10 / kmInLatitudeDegree;
 
   try {
+    // Buscar conductores en un radio de 10 km, si tienen un viaje activo
     const users = await User.find({
       location: {
         $geoWithin: {
@@ -221,16 +252,18 @@ const radarLocation = async (req, res) => {
         }
       },
       role: 'Conductor'
-    }).select('-password');
+    }).select('-password').limit(5);  // Limitar la consulta a un máximo de 5 resultados
 
     if (!users.length) {
-      return res.status(404).json({ message: 'No users found within approximately 1 km radius' });
+      return res.status(404).json({ message: 'No users found within approximately 10 km radius' });
     }
+
     res.json(users);
   } catch (error) {
     return res.status(500).json({ message: 'Server error', error });
   }
 };
+
 
 
 const updateUserLocation = async (req, res) => {
