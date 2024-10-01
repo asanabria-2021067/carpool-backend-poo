@@ -5,10 +5,14 @@ const getUserTripHistory = async (req, res) => {
   const id = req.usuario.id;
   try {
     const tripHistory = await TripHistory.find({ user: id })
-      .populate('trip')
-      .populate('driver', 'firstName lastName email img')
-      .populate('vehicle')
-      .populate('passengers', 'firstName lastName email img');
+      .populate({
+        path: 'trip',
+        populate: [
+          { path: 'driver', select: 'firstName lastName email img' },
+          { path: 'vehicle' },
+          { path: 'passengers', select: 'firstName lastName email img' },
+        ],
+      });
     if (!tripHistory) {
       return res.status(404).json({ message: 'Trip history not found' });
     }
