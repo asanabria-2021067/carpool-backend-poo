@@ -11,54 +11,69 @@ const Vehicle = require('../models/Vehicle');
 const createTrip = async (req, res) => {
   const id = req.usuario.id;
   const driver = await User.findById(id);
-  const startLocation = {
-    type: 'Point',
-    coordinates: driver.location.coordinates // Usamos la ubicación del conductor
-  };
-  const vehicle = await Vehicle.findOne({owner: id});
+  const vehicle = await Vehicle.findOne({ owner: id });
+
   if (!vehicle) {
     return res.status(400).json({ message: 'Vehicle not exists' });
   }
+
   if (!driver) {
     return res.status(400).json({ message: 'Invalid driver' });
   }
-  if(driver.role != "Conductor") {
-    return res.status(400).json({ message: 'The user have driver role' });
+
+  if (driver.role !== "Conductor") {
+    return res.status(400).json({ message: 'The user must have the driver role' });
   }
-  if(driver.role == "Conductor") {
-    const {endLocation, seatsAvailable, passengers } = req.body;
-    const startTime = Date.now();
-    try {
-      const trip = await Trip.create({
-        driver,
-        vehicle,
-        startLocation,
-        endLocation,
-        startTime,
-        seatsAvailable,
-        passengers,
-      });
-  
-      // Agregar el viaje al historial del conductor
+
+  // Verificar si el conductor tiene una ubicación definida
+  if (!driver.location || !driver.location.coordinates || driver.location.coordinates.length !== 2) {
+    console.error('Error: El conductor no tiene una ubicación válida:', driver.location);
+    return res.status(400).json({ message: 'Driver must have a valid location' });
+  }
+
+  console.log('Ubicación del conductor:', driver.location);  // Agregar para depuración
+
+  const [lng, lat] = driver.location.coordinates;
+
+  const startLocation = {
+    lat,
+    lng
+  };
+
+  const { endLocation, seatsAvailable, passengers } = req.body;
+  const startTime = Date.now();
+
+  try {
+    const trip = await Trip.create({
+      driver,
+      vehicle,
+      startLocation, // Usamos la ubicación del conductor como startLocation
+      endLocation,
+      startTime,
+      seatsAvailable,
+      passengers,
+    });
+
+    // Agregar el viaje al historial del conductor
+    await TripHistory.create({
+      user: driver,
+      trip: trip._id,
+      role: 'driver',
+    });
+
+    // Agregar el viaje al historial de cada pasajero
+    for (const passenger of passengers) {
       await TripHistory.create({
-        user: driver,
+        user: passenger,
         trip: trip._id,
-        role: 'driver',
+        role: 'passenger',
       });
-  
-      // Agregar el viaje al historial de cada pasajero
-      for (const passenger of passengers) {
-        await TripHistory.create({
-          user: passenger,
-          trip: trip._id,
-          role: 'passenger',
-        });
-      }
-  
-      res.status(201).json(trip);
-    } catch (error) {
-      res.status(500).json({ message: 'Server error' });
     }
+
+    res.status(201).json(trip);
+  } catch (error) {
+    console.error('Error al crear el viaje:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 

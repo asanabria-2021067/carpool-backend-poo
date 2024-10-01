@@ -5,7 +5,7 @@ const { protect } = require('../middleware/authMiddleware');
 const { getAllTrips } = require('../controllers/tripController');
 
 // Rutas para historial de viajes
-router.get('/:userId', getUserTripHistory);
+router.get('/myTrips',[protect], getUserTripHistory);
 router.get('/get/trips', getAllTrips);
 
 

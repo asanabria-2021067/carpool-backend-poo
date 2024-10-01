@@ -1,9 +1,10 @@
 const TripHistory = require('../models/TripHistory');
 
-// Obtener el historial de viajes de un usuario
+// Obtener el historial de viajes de un usuario pasajero
 const getUserTripHistory = async (req, res) => {
+  const id = req.usuario.id;
   try {
-    const tripHistory = await TripHistory.find({ user: req.params.userId })
+    const tripHistory = await TripHistory.find({ user: id })
       .populate('trip')
       .populate('trip.driver', 'firstName lastName email')
       .populate('trip.vehicle')

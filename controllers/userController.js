@@ -202,7 +202,7 @@ const getUserById = async (req, res) => {
 const radarLocation = async (req, res) => {
   const id = req.usuario.id;
   const Usuario = await User.findById(id);
-
+  
   // Definir `now` como la fecha y hora actuales
   const now = new Date();
 
@@ -211,12 +211,11 @@ const radarLocation = async (req, res) => {
 
   // Filtrar los viajes del conductor que empiezan hoy y no antes de 5 horas
   const tideDriver = await Trip.find({
-    driver: id,
     startTime: {
       $gte: fiveHoursAgo,  // Viajes que comiencen después de hace 5 horas
       $lt: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)  // Viajes solo del día de hoy
     }
-  }).sort({ startTime: 1 });
+  }).sort({ startTime: 1 }).limit(5);
 
   // Validar si el conductor tiene viajes
   if (!tideDriver.length) {
