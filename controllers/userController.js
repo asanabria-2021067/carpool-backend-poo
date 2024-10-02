@@ -66,6 +66,42 @@ const registerUser = async (req, res) => {
   }
 };
 
+const concludeProfile = async(req, res) => {
+  const {studentId, phone, img, licence, role } = req.body;
+  const id = req.params.id;
+  try {
+    const Usuario = await User.findById(id);
+    if (!Usuario) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    Usuario.studentId = studentId || Usuario.studentId;
+    Usuario.phone = phone || Usuario.phone;
+    Usuario.img = img || Usuario.img;
+    Usuario.licence = licence || Usuario.licence;
+    Usuario.role = role || Usuario.role;
+    await Usuario.save();
+
+    return res.status(200).json({
+      user: {
+        id: Usuario._id,
+        firstName: Usuario.firstName,
+        lastName: Usuario.lastName,
+        studentId: Usuario.studentId,
+        email: Usuario.email,
+        phone: Usuario.phone,
+        location: Usuario.location,
+        img: Usuario.img,
+        licence: Usuario.licence,
+        role: Usuario.role
+      },
+      message: 'Profile updated successfully'
+    });
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error', error });
+  }
+
+}
+
 const updateMyProfile = async (req, res) => {
   const { firstName, lastName, studentId, email, password, phone, img, licence, role, longitude, latitude } = req.body;
   const id = req.usuario.id;
@@ -300,5 +336,6 @@ module.exports = {
   radarLocation,
   updateUserLocation,
   getAllUsers,
-  updateMyProfile
+  updateMyProfile,
+  concludeProfile
 };
