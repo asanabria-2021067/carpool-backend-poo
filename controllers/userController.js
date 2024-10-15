@@ -39,12 +39,8 @@ const registerUser = async (req, res) => {
     });
 
     if (user) {
-      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-        expiresIn: '10h',
-      });
-
+      
       return res.status(201).json({
-        token,
         user: {
           id: user._id,
           firstName: user.firstName,
@@ -299,8 +295,6 @@ const radarLocation = async (req, res) => {
   }
 };
 
-
-
 const updateUserLocation = async (req, res) => {
   const userId = req.usuario.id;
   const { latitude, longitude } = req.body;
@@ -329,6 +323,90 @@ const updateUserLocation = async (req, res) => {
   }
 };
 
+// Aceptar un pasajero en el viaje
+const acceptPassenger = async (req, res) => {
+  const { tripId, passengerId } = req.body; // Se espera que el cuerpo contenga tripId y passengerId
+
+  try {
+    const trip = await Trip.findById(tripId);
+    if (!trip) {
+      return res.status(404).json({ message: 'Trip not found' });
+    }
+
+    const passengerStatus = trip.passengersStatus.find(status => status.passengerId.equals(passengerId));
+
+    if (!passengerStatus) {
+      return res.status(404).json({ message: 'Passenger not found in this trip' });
+    }
+
+    passengerStatus.accepted = true;
+    trip.seatsAvailable -= 1; // Reducir los asientos disponibles
+    await trip.save();
+
+    return res.status(200).json({ message: 'Passenger accepted successfully', trip });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Cancelar el viaje por parte del pasajero
+const cancelPassenger = async (req, res) => {
+  const { tripId } = req.body; // Se espera que el cuerpo contenga tripId
+  const userId = req.usuario.id; // ID del usuario a partir del JWT
+
+  try {
+    const trip = await Trip.findById(tripId);
+    if (!trip) {
+      return res.status(404).json({ message: 'Trip not found' });
+    }
+
+    const passengerStatus = trip.passengersStatus.find(status => status.passengerId.equals(userId));
+
+    if (!passengerStatus) {
+      return res.status(404).json({ message: 'Passenger not found in this trip' });
+    }
+
+    if (passengerStatus.canceled) {
+      return res.status(400).json({ message: 'Passenger has already canceled the trip' });
+    }
+
+    passengerStatus.canceled = true;
+    trip.seatsAvailable += 1; // Incrementar los asientos disponibles
+    await trip.save();
+
+    return res.status(200).json({ message: 'Trip canceled successfully', trip });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Cancelar el viaje por parte del conductor
+const cancelTripByDriver = async (req, res) => {
+  const { tripId } = req.body; // Se espera que el cuerpo contenga tripId
+  const userId = req.usuario.id; // ID del conductor a partir del JWT
+
+  try {
+    const trip = await Trip.findById(tripId);
+    if (!trip) {
+      return res.status(404).json({ message: 'Trip not found' });
+    }
+
+    if (!trip.driver.equals(userId)) {
+      return res.status(403).json({ message: 'Not authorized to cancel this trip' });
+    }
+
+    trip.canceled = true; // Marcar el viaje como cancelado
+    await trip.save();
+
+    return res.status(200).json({ message: 'Trip canceled successfully by driver', trip });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
@@ -337,5 +415,8 @@ module.exports = {
   updateUserLocation,
   getAllUsers,
   updateMyProfile,
-  concludeProfile
+  concludeProfile,
+  acceptPassenger,
+  cancelPassenger,
+  cancelTripByDriver,
 };

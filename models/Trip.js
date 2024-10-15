@@ -15,8 +15,11 @@ const tripSchema = new mongoose.Schema({
   seatsAvailable: { type: Number, required: true },
   passengers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   price: { type: Number, default: 0 },
-  accepted: {type: Boolean, default: false},
-  completed: { type: Boolean, default: false},
+  passengersStatus: [{
+    passengerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    accepted: { type: Boolean, default: false },
+    canceled: { type: Boolean, default: false }
+  }],
   securityCode: { type: Number, default: () => Math.floor(1000 + Math.random() * 9000) },
   createdAt: { type: Date, default: Date.now },
 });
