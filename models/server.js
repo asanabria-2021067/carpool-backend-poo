@@ -14,6 +14,9 @@ class Server {
 
     constructor() {
         this.app = express();
+        this.app.get('/', (req, res) => {
+            res.send('Bienvenido al backend de TideDive');
+        });
         this.port = process.env.PORT || 3000;
 
         // Crear servidor HTTP a partir de Express
@@ -123,6 +126,7 @@ class Server {
             });
         });
     }
+    
 
     listen() {
         this.server.listen(this.port, () => {
