@@ -230,47 +230,32 @@ const getUserById = async (req, res) => {
 
 // Buscar usuarios en un radio de 1 km
 const radarLocation = async (req, res) => {
-  const id = req.usuario.id;
-  const Usuario = await User.findById(id);
-  
-  // Definir `now` como la fecha y hora actuales
-  const now = new Date();
-
-  // Definir el límite de 5 horas antes
-  const fiveHoursAgo = new Date(now.getTime() - 5 * 60 * 60 * 1000);
-
-  // Filtrar los viajes del conductor que empiezan hoy y no antes de 5 horas
-  const tideDriver = await Trip.find({
-    startTime: {
-      $gte: fiveHoursAgo,  // Viajes que comiencen después de hace 5 horas
-      $lt: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)  // Viajes solo del día de hoy
-    }
-  }).sort({ startTime: 1 }).limit(5);
-
-  // Validar si el conductor tiene viajes
-  if (!tideDriver.length) {
-    return res.status(404).json({ message: 'No trips found for the driver' });
-  }
-
-  if (!Usuario.location.coordinates || !Usuario.location.coordinates.length) {
-    return res.status(400).json({ message: 'Coordinates are required' });
-  }
-
-  const longitude = parseFloat(Usuario.location.coordinates[0]);
-  const latitude = parseFloat(Usuario.location.coordinates[1]);
-
-  if (isNaN(latitude) || isNaN(longitude)) {
-    return res.status(400).json({ message: 'Coordinates must be numeric' });
-  }
-
-  // Aproximación de 1 km en grados (varía según la latitud)
-  const kmInLongitudeDegree = 111.32 * Math.cos(latitude * (Math.PI / 180));
-  const kmInLatitudeDegree = 111.32;
-  const deltaLongitude = 10 / kmInLongitudeDegree;
-  const deltaLatitude = 10 / kmInLatitudeDegree;
-
   try {
-    // Buscar conductores en un radio de 10 km, si tienen un viaje activo
+    const id = req.usuario.id;
+    const Usuario = await User.findById(id);
+  
+    if (!Usuario.location.coordinates || !Usuario.location.coordinates.length) {
+      return res.status(400).json({ message: 'Coordinates are required' });
+    }
+
+    const longitude = parseFloat(Usuario.location.coordinates[0]);
+    const latitude = parseFloat(Usuario.location.coordinates[1]);
+
+    if (isNaN(latitude) || isNaN(longitude)) {
+      return res.status(400).json({ message: 'Coordinates must be numeric' });
+    }
+
+    // Definir `now` como la fecha y hora actuales y límite de 5 horas antes
+    const now = new Date();
+    const fiveHoursAgo = new Date(now.getTime() - 5 * 60 * 60 * 1000);
+
+    // Aproximación de 1 km en grados (varía según la latitud)
+    const kmInLongitudeDegree = 111.32 * Math.cos(latitude * (Math.PI / 180));
+    const kmInLatitudeDegree = 111.32;
+    const deltaLongitude = 1 / kmInLongitudeDegree;
+    const deltaLatitude = 1 / kmInLatitudeDegree;
+
+    // Buscar conductores en un radio de 1 km que tengan viajes activos hoy y dentro de las últimas 5 horas
     const users = await User.find({
       location: {
         $geoWithin: {
@@ -281,17 +266,43 @@ const radarLocation = async (req, res) => {
         }
       },
       role: 'Conductor'
-    }).select('-password').limit(5);  // Limitar la consulta a un máximo de 5 resultados
+    }).select('-password').limit(5);  // Limitar a 5 resultados
 
     if (!users.length) {
-      return res.status(404).json({ message: 'No users found within approximately 10 km radius' });
+      return res.status(404).json({ message: 'No nearby drivers found within 1 km radius' });
     }
 
-    res.json(users);
+    // Obtener viajes activos hoy y en las últimas 5 horas para cada conductor encontrado
+    const driversWithTrips = await Promise.all(
+      users.map(async (driver) => {
+        const trips = await Trip.find({
+          driver: driver._id,
+          startTime: {
+            $gte: fiveHoursAgo,
+            $lt: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)  // Solo viajes de hoy
+          }
+        })
+        .populate('driver', 'firstName lastName img') // Popular detalles del conductor
+        .populate('passengers', 'firstName lastName')  // Popular detalles de los pasajeros
+        .sort({ startTime: 1 })
+        .limit(5);  // Limitar a 5 viajes recientes
+
+        return { driver, trips };
+      })
+    );
+
+    const nearbyDriversWithActiveTrips = driversWithTrips.filter(({ trips }) => trips.length > 0);
+
+    if (!nearbyDriversWithActiveTrips.length) {
+      return res.status(404).json({ message: 'No nearby drivers with active trips found' });
+    }
+
+    res.json(nearbyDriversWithActiveTrips);
   } catch (error) {
     return res.status(500).json({ message: 'Server error', error });
   }
 };
+
 
 const updateUserLocation = async (req, res) => {
   const userId = req.usuario.id;
