@@ -4,6 +4,7 @@ const User = require('../models/User');
 
 const protect = async (req = request, res =response, next) => {
       const token = req.header('x-token');
+      
       if (!token) {
         res.status(401).json({ message: 'Not authorized, no token' });
         return;

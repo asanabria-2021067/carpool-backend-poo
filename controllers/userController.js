@@ -99,61 +99,59 @@ const concludeProfile = async(req, res) => {
 }
 
 const updateMyProfile = async (req, res) => {
+  
   const { firstName, lastName, studentId, email, password, phone, img, licence, role, longitude, latitude } = req.body;
   const id = req.usuario.id;
-
-  try {
-    const Usuario = await User.findById(id);
-    if (!Usuario) {
-      return res.status(404).json({ message: 'User not found' });
+    const usuario = await User.findById(id);
+    if (!usuario) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    const userWithSameEmail = await User.findOne({ email });
-
-    if (userWithSameEmail && userWithSameEmail.id !== id) {
-      return res.status(400).json({ message: 'Email already in use by another user' });
+    if (email && email !== usuario.email) {
+      const userWithSameEmail = await User.findOne({ email });
+      if (userWithSameEmail && userWithSameEmail._id.toString() !== id) {
+        return res.status(400).json({ message: 'El correo ya está en uso por otro usuario' });
+      }
+      usuario.email = email;
     }
 
-    // Hash the password if it is provided
-    let hashedPassword;
     if (password) {
       const salt = await bcrypt.genSalt(10);
-      hashedPassword = await bcrypt.hash(password, salt);
+      usuario.password = await bcrypt.hash(password, salt);
     }
 
-    // Update user information
-    Usuario.firstName = firstName || Usuario.firstName;
-    Usuario.lastName = lastName || Usuario.lastName;
-    Usuario.studentId = studentId || Usuario.studentId;
-    Usuario.email = email || Usuario.email;
-    Usuario.phone = phone || Usuario.phone;
-    Usuario.password = hashedPassword || Usuario.password;
-    Usuario.img = img || Usuario.img;
-    Usuario.licence = licence || Usuario.licence;
-    Usuario.role = role || Usuario.role;
-    Usuario.location = { type: 'Point', coordinates: [longitude, latitude] } || Usuario.location;
+    // Actualización de los datos del usuario
+    usuario.firstName = firstName || usuario.firstName;
+    usuario.lastName = lastName || usuario.lastName;
+    usuario.studentId = studentId || usuario.studentId;
+    usuario.phone = phone || usuario.phone;
+    usuario.img = img || usuario.img;
+    usuario.licence = licence || usuario.licence;
+    usuario.role = role || usuario.role;
 
-    await Usuario.save();
+    if (longitude && latitude) {
+      usuario.location = { type: 'Point', coordinates: [longitude, latitude] };
+    }
+
+    await usuario.save();
 
     return res.status(200).json({
       user: {
-        id: Usuario._id,
-        firstName: Usuario.firstName,
-        lastName: Usuario.lastName,
-        studentId: Usuario.studentId,
-        email: Usuario.email,
-        phone: Usuario.phone,
-        location: Usuario.location,
-        img: Usuario.img,
-        licence: Usuario.licence,
-        role: Usuario.role
+        id: usuario._id,
+        firstName: usuario.firstName,
+        lastName: usuario.lastName,
+        studentId: usuario.studentId,
+        email: usuario.email,
+        phone: usuario.phone,
+        location: usuario.location,
+        img: usuario.img,
+        licence: usuario.licence,
+        role: usuario.role,
       },
-      message: 'Profile updated successfully'
+      message: 'Perfil actualizado con éxito'
     });
-  } catch (error) {
-    return res.status(500).json({ message: 'Server error', error });
-  }
 };
+
 
 
 const loginUser = async (req, res) => {
