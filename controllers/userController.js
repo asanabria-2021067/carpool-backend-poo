@@ -284,7 +284,7 @@ const radarLocation = async (req, res) => {
         })
         .populate('driver', 'firstName lastName img') // Popular detalles del conductor
         .populate('passengers', 'firstName lastName')  // Popular detalles de los pasajeros
-        .populate('vechile', 'plateNumber model carImage')
+        .populate('vehicle', 'plateNumber model carImage')
         .sort({ startTime: 1 })
         .limit(5);  // Limitar a 5 viajes recientes
 
