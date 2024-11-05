@@ -46,6 +46,7 @@ class Server {
     middlewares() {
         // Middleware para parsear JSON
         this.app.use(express.json());
+        this.app.use(cors());
         this.app.use(express.static('public'));
     }
 
