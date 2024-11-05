@@ -230,7 +230,7 @@ const getUserById = async (req, res) => {
 
 // Buscar usuarios en un radio de 1 km
 const radarLocation = async (req, res) => {
-  try {
+  console.log("hola")
     const id = req.usuario.id;
     const Usuario = await User.findById(id);
   
@@ -284,6 +284,7 @@ const radarLocation = async (req, res) => {
         })
         .populate('driver', 'firstName lastName img') // Popular detalles del conductor
         .populate('passengers', 'firstName lastName')  // Popular detalles de los pasajeros
+        .populate('vechile', 'plateNumber model carImage')
         .sort({ startTime: 1 })
         .limit(5);  // Limitar a 5 viajes recientes
 
@@ -298,9 +299,6 @@ const radarLocation = async (req, res) => {
     }
 
     res.json(nearbyDriversWithActiveTrips);
-  } catch (error) {
-    return res.status(500).json({ message: 'Server error', error });
-  }
 };
 
 
