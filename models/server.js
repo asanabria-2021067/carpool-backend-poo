@@ -46,6 +46,10 @@ class Server {
     middlewares() {
         // Middleware para parsear JSON
         this.app.use(express.json());
+        this.app.use(cors({
+            origin: 'http://localhost:5173',
+            origin: 'https://carpool-app-uvg.web.app/'
+          }));
         this.app.use(cors());
         this.app.use(express.static('public'));
     }
