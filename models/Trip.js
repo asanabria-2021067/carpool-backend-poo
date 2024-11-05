@@ -16,7 +16,7 @@ const tripSchema = new mongoose.Schema({
   passengers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   price: { type: Number, default: 0 },
   passengersStatus: [{
-    passengerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    passengerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     accepted: { type: Boolean, default: false },
     canceled: { type: Boolean, default: false }
   }],

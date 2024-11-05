@@ -414,7 +414,6 @@ const cancelTripByDriver = async (req, res) => {
   }
 };
 
-// Unirse a un viaje
 const joinTrip = async (req, res) => {
   const { tripId } = req.body; // Se espera que el cuerpo contenga tripId
   const userId = req.usuario.id; // ID del usuario a partir del JWT
@@ -437,14 +436,16 @@ const joinTrip = async (req, res) => {
     }
 
     // Agregar al usuario a la lista de pasajeros
-    trip.passengers.push(userId);
-    trip.passengersStatus.push({
+    trip.passengers.push(userId); // Agrega el ID del pasajero
+    trip.passengersStatus.push({ // Crea un nuevo estado para el pasajero
       passengerId: userId,
       accepted: false,
       canceled: false
     });
 
     trip.seatsAvailable -= 1; // Reducir los asientos disponibles
+
+    // Guarda los cambios en el viaje
     await trip.save();
 
     return res.status(200).json({ message: 'Successfully joined the trip', trip });
