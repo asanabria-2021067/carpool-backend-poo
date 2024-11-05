@@ -414,8 +414,49 @@ const cancelTripByDriver = async (req, res) => {
   }
 };
 
+// Unirse a un viaje
+const joinTrip = async (req, res) => {
+  const { tripId } = req.body; // Se espera que el cuerpo contenga tripId
+  const userId = req.usuario.id; // ID del usuario a partir del JWT
+
+  try {
+    const trip = await Trip.findById(tripId);
+    if (!trip) {
+      return res.status(404).json({ message: 'Trip not found' });
+    }
+
+    // Verificar si hay asientos disponibles
+    if (trip.seatsAvailable <= 0) {
+      return res.status(400).json({ message: 'No seats available for this trip' });
+    }
+
+    // Verificar si el usuario ya está en la lista de pasajeros
+    const passengerStatus = trip.passengersStatus.find(status => status.passengerId.equals(userId));
+    if (passengerStatus) {
+      return res.status(400).json({ message: 'User is already part of this trip' });
+    }
+
+    // Agregar al usuario a la lista de pasajeros
+    trip.passengers.push(userId);
+    trip.passengersStatus.push({
+      passengerId: userId,
+      accepted: false,
+      canceled: false
+    });
+
+    trip.seatsAvailable -= 1; // Reducir los asientos disponibles
+    await trip.save();
+
+    return res.status(200).json({ message: 'Successfully joined the trip', trip });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
 module.exports = {
   registerUser,
+  joinTrip,
   loginUser,
   getUserById,
   radarLocation,
