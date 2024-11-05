@@ -230,11 +230,12 @@ const getUserById = async (req, res) => {
 
 // Buscar usuarios en un radio de 1 km
 const radarLocation = async (req, res) => {
-  console.log("hola")
+  try {
+    console.log("hola");
     const id = req.usuario.id;
     const Usuario = await User.findById(id);
-  
-    if (!Usuario.location.coordinates || !Usuario.location.coordinates.length) {
+
+    if (!Usuario || !Usuario.location || !Usuario.location.coordinates || !Usuario.location.coordinates.length) {
       return res.status(400).json({ message: 'Coordinates are required' });
     }
 
@@ -245,17 +246,14 @@ const radarLocation = async (req, res) => {
       return res.status(400).json({ message: 'Coordinates must be numeric' });
     }
 
-    // Definir `now` como la fecha y hora actuales y límite de 5 horas antes
     const now = new Date();
     const fiveHoursAgo = new Date(now.getTime() - 5 * 60 * 60 * 1000);
 
-    // Aproximación de 1 km en grados (varía según la latitud)
     const kmInLongitudeDegree = 111.32 * Math.cos(latitude * (Math.PI / 180));
     const kmInLatitudeDegree = 111.32;
     const deltaLongitude = 1 / kmInLongitudeDegree;
     const deltaLatitude = 1 / kmInLatitudeDegree;
 
-    // Buscar conductores en un radio de 1 km que tengan viajes activos hoy y dentro de las últimas 5 horas
     const users = await User.find({
       location: {
         $geoWithin: {
@@ -266,27 +264,26 @@ const radarLocation = async (req, res) => {
         }
       },
       role: 'Conductor'
-    }).select('-password').limit(5);  // Limitar a 5 resultados
+    }).select('-password').limit(5);
 
     if (!users.length) {
       return res.status(404).json({ message: 'No nearby drivers found within 1 km radius' });
     }
 
-    // Obtener viajes activos hoy y en las últimas 5 horas para cada conductor encontrado
     const driversWithTrips = await Promise.all(
       users.map(async (driver) => {
         const trips = await Trip.find({
           driver: driver._id,
           startTime: {
             $gte: fiveHoursAgo,
-            $lt: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)  // Solo viajes de hoy
+            $lt: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
           }
         })
-        .populate('driver', 'firstName lastName img') // Popular detalles del conductor
-        .populate('passengers', 'firstName lastName')  // Popular detalles de los pasajeros
+        .populate('driver', 'firstName lastName img')
+        .populate('passengers', 'firstName lastName')
         .populate('vehicle', 'plateNumber model carImage')
         .sort({ startTime: 1 })
-        .limit(5);  // Limitar a 5 viajes recientes
+        .limit(5);
 
         return { driver, trips };
       })
@@ -299,6 +296,10 @@ const radarLocation = async (req, res) => {
     }
 
     res.json(nearbyDriversWithActiveTrips);
+  } catch (error) {
+    console.error("Error in radarLocation:", error);
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
 };
 
 
