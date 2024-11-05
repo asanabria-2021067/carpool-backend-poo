@@ -13,7 +13,7 @@ router.post('/get', getAllUsers);
 router.post('/sendCode',[protect], sendSecurityCode);
 router.post('/update', [protect], updateMyProfile);
 router.post('/join', [protect], joinTrip);
-router.get('/radar', [protect], radarLocation);
+router.post('/radar', [protect], radarLocation);
 router.get('/updateLocation', updateUserLocation);
 router.post('/accept',  [protect], acceptPassenger);
 router.post('/cancel/passenger',  [protect], cancelPassenger);
