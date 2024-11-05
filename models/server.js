@@ -48,8 +48,7 @@ class Server {
     middlewares() {
         // Middleware para parsear JSON
         this.app.use(cors({
-            origin: 'http://localhost:5173',
-            origin: "https://carpool-backend-poo.vercel.app/", // Cambia esta URL al dominio de tu frontend
+            origin: ['http://localhost:5173', 'https://carpool-backend-poo.vercel.app'],
             methods: ['GET', 'POST', 'PUT', 'DELETE'], // Métodos permitidos
             credentials: true // Habilita el envío de cookies
         }));
