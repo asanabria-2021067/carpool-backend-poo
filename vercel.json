@@ -14,7 +14,7 @@
     ],
     "env": {
       "PORT": "5000",
-      "MONGO_URI": "mongodb+srv://angel:12345@cluster0.yws8o5v.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
+      "MONGO_URI": "mongodb://angel:12345@ac-4adxeki-shard-00-00.yws8o5v.mongodb.net:27017,ac-4adxeki-shard-00-01.yws8o5v.mongodb.net:27017,ac-4adxeki-shard-00-02.yws8o5v.mongodb.net:27017/?ssl=true&replicaSet=atlas-am5pbh-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0",
       "JWT_SECRET":"your_jwt_secret"
     }
   }
