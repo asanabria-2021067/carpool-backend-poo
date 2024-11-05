@@ -25,8 +25,7 @@ class Server {
         // Crear instancia de Socket.IO
         this.io = new SocketIOServer(this.server, {
             cors: {
-                origin: 'http://localhost:5173',
-                origin: "https://carpool-backend-poo.vercel.app/", // Asegúrate de que coincide con el dominio del frontend
+                origin: ['http://localhost:5173', 'https://carpool-backend-poo.vercel.app'], // Asegúrate de que coincide con el dominio del frontend
                 methods: ['GET', 'POST'],
                 credentials: true
             }
@@ -47,13 +46,7 @@ class Server {
 
     middlewares() {
         // Middleware para parsear JSON
-        this.app.use(cors({
-            origin: ['http://localhost:5173', 'https://carpool-backend-poo.vercel.app'],
-            methods: ['GET', 'POST', 'PUT', 'DELETE'], // Métodos permitidos
-            credentials: true // Habilita el envío de cookies
-        }));
-        this.app.use(express.json());
-        this.app.use(express.static('public'));
+        this.app.use(cors())
         this.app.use(express.json());
         this.app.use(express.static('public'));
     }
