@@ -14,6 +14,7 @@ class Server {
 
     constructor() {
         this.app = express();
+        this.app.use(cors());
         this.app.get('/', (req, res) => {
             res.send('Bienvenido al backend de TideDive');
         });
@@ -46,7 +47,6 @@ class Server {
     middlewares() {
         // Middleware para parsear JSON
         this.app.use(express.json());
-        this.app.use(cors());
         this.app.use(express.static('public'));
     }
 
