@@ -415,11 +415,15 @@ const cancelTripByDriver = async (req, res) => {
 };
 
 const joinTrip = async (req, res) => {
+  console.log("hola");
+  
   const { tripId } = req.body; // Se espera que el cuerpo contenga tripId
   const userId = req.usuario.id; // ID del usuario a partir del JWT
-
+  console.log(userId)
   try {
     const trip = await Trip.findById(tripId);
+    console.log(trip);
+    
     if (!trip) {
       return res.status(404).json({ message: 'Trip not found' });
     }
@@ -437,6 +441,8 @@ const joinTrip = async (req, res) => {
 
     // Agregar al usuario a la lista de pasajeros
     trip.passengers.push(userId); // Agrega el ID del pasajero
+    console.log(trip.passengers);
+    
     trip.passengersStatus.push({ // Crea un nuevo estado para el pasajero
       passengerId: userId,
       accepted: false,
