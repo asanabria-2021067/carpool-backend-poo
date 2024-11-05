@@ -462,6 +462,70 @@ const joinTrip = async (req, res) => {
   }
 };
 
+const deleteUserByAdmin = async (req, res) => {
+  const { id } = req.params;
+  const adminId = req.usuario.id;
+
+  try {
+    const adminUser = await User.findById(adminId);
+    
+    // Verificar si el usuario que hace la solicitud es administrador
+    if (!adminUser || adminUser.role !== 'Administrador') {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    const userToDelete = await User.findById(id);
+    if (!userToDelete) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    await userToDelete.remove();
+
+    return res.status(200).json({ message: 'User deleted successfully' });
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error', error });
+  }
+};
+const editUserByAdmin = async (req, res) => {
+  const { id } = req.params;
+  const { firstName, lastName, studentId, email, phone, img, licence, role } = req.body;
+  const adminId = req.usuario.id;
+
+  try {
+    const adminUser = await User.findById(adminId);
+
+    // Verificar si el usuario que hace la solicitud es administrador
+    if (!adminUser || adminUser.role !== 'Administrador') {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    const userToEdit = await User.findById(id);
+    if (!userToEdit) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Actualizar los campos que fueron enviados en el cuerpo de la solicitud
+    userToEdit.firstName = firstName || userToEdit.firstName;
+    userToEdit.lastName = lastName || userToEdit.lastName;
+    userToEdit.studentId = studentId || userToEdit.studentId;
+    userToEdit.email = email || userToEdit.email;
+    userToEdit.phone = phone || userToEdit.phone;
+    userToEdit.img = img || userToEdit.img;
+    userToEdit.licence = licence || userToEdit.licence;
+    userToEdit.role = role || userToEdit.role;
+
+    await userToEdit.save();
+
+    return res.status(200).json({
+      message: 'User updated successfully',
+      user: userToEdit
+    });
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error', error });
+  }
+};
+
+
 module.exports = {
   registerUser,
   joinTrip,
@@ -470,6 +534,8 @@ module.exports = {
   radarLocation,
   updateUserLocation,
   getAllUsers,
+  deleteUserByAdmin,
+  editUserByAdmin,
   updateMyProfile,
   concludeProfile,
   acceptPassenger,

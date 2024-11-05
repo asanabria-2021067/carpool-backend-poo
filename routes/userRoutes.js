@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { registerUser, loginUser, getUserById, radarLocation, updateUserLocation, getAllUsers, updateMyProfile, concludeProfile, acceptPassenger, cancelPassenger, cancelTripByDriver, joinTrip } = require('../controllers/userController');
+const { registerUser, loginUser, getUserById, radarLocation, updateUserLocation, getAllUsers, updateMyProfile, concludeProfile, acceptPassenger, cancelPassenger, cancelTripByDriver, joinTrip, deleteUserByAdmin, editUserByAdmin } = require('../controllers/userController');
 const { protect } = require('../middleware/authMiddleware');
 const { sendSecurityCode } = require('../controllers/tripController');
 
@@ -18,7 +18,8 @@ router.get('/updateLocation', updateUserLocation);
 router.post('/accept',  [protect], acceptPassenger);
 router.post('/cancel/passenger',  [protect], cancelPassenger);
 router.post('/cancel/driver',  [protect], cancelTripByDriver);
-
+router.delete('/user/:id', [protect], deleteUserByAdmin);
+router.post('/user/:id', [protect], editUserByAdmin);
 
 
 module.exports = router;
