@@ -18,8 +18,8 @@ router.get('/updateLocation', updateUserLocation);
 router.post('/accept',  [protect], acceptPassenger);
 router.post('/cancel/passenger',  [protect], cancelPassenger);
 router.post('/cancel/driver',  [protect], cancelTripByDriver);
-router.delete('/delete/:id', [protect], deleteUserByAdmin);
-router.post('/update/:id', [protect], editUserByAdmin);
+router.delete('/delete/:id',deleteUserByAdmin);
+router.post('/update/:id', editUserByAdmin);
 
 
 module.exports = router;
