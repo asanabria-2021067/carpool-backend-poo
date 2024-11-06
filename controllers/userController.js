@@ -228,10 +228,8 @@ const getUserById = async (req, res) => {
   }
 };
 
-// Buscar usuarios en un radio de 1 km
 const radarLocation = async (req, res) => {
   try {
-    console.log("hola");
     const id = req.usuario.id;
     const Usuario = await User.findById(id);
 
@@ -254,6 +252,7 @@ const radarLocation = async (req, res) => {
     const deltaLongitude = 1 / kmInLongitudeDegree;
     const deltaLatitude = 1 / kmInLatitudeDegree;
 
+    // Buscar conductores cercanos
     const users = await User.find({
       location: {
         $geoWithin: {
@@ -270,14 +269,15 @@ const radarLocation = async (req, res) => {
       return res.status(404).json({ message: 'No nearby drivers found within 1 km radius' });
     }
 
+    // Buscar viajes activos para cada conductor
     const driversWithTrips = await Promise.all(
       users.map(async (driver) => {
         const trips = await Trip.find({
           driver: driver._id,
-          startTime: {
-            $gte: fiveHoursAgo,
-            $lt: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
-          }
+          $or: [
+            { startTime: { $gte: fiveHoursAgo, $lt: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1) } },
+            { startTime: null }  // Esta línea permite que los conductores sin viajes activos aún aparezcan
+          ]
         })
         .populate('driver', 'firstName lastName img')
         .populate('passengers', 'firstName lastName')
