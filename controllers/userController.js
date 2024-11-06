@@ -463,12 +463,13 @@ const joinTrip = async (req, res) => {
 };
 
 const deleteUserByAdmin = async (req, res) => {
+    const { id } = req.params;
     const userToDelete = await User.findById(id);
     if (!userToDelete) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    await userToDelete.remove();
+    await userToDelete.deleteOne();
 
     return res.status(200).json({ message: 'User deleted successfully' });
 };
