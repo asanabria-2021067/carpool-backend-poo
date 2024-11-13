@@ -249,8 +249,8 @@ const radarLocation = async (req, res) => {
 
     const kmInLongitudeDegree = 111.32 * Math.cos(latitude * (Math.PI / 180));
     const kmInLatitudeDegree = 111.32;
-    const deltaLongitude = 20 / kmInLongitudeDegree;
-    const deltaLatitude = 20 / kmInLatitudeDegree;
+    const deltaLongitude = 10 / kmInLongitudeDegree;
+    const deltaLatitude = 10 / kmInLatitudeDegree;
 
     // Buscar conductores cercanos
     const users = await User.find({
