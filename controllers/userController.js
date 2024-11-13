@@ -4,24 +4,33 @@ const User = require('../models/User');
 const { generarJWT } = require('../helpers/generarJWT');
 const Trip = require('../models/Trip');
 
-// Registro de usuario
 const registerUser = async (req, res) => {
   const { firstName, lastName, studentId, email, password, phone, latitude, longitude, img, licence, role } = req.body;
 
+  // Validación de coordenadas
   if (!latitude || !longitude || typeof latitude !== 'number' || typeof longitude !== 'number') {
     return res.status(400).json({ message: 'Invalid coordinates' });
   }
 
+  // Validación de correo electrónico
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@uvg\.edu\.gt$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ message: 'Email must be a valid @uvg.edu.gt email' });
+  }
+
   try {
+    // Verificar si el usuario ya existe
     const userExists = await User.findOne({ email });
 
     if (userExists) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
+    // Hash del password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    // Crear usuario
     const user = await User.create({
       firstName,
       lastName,
@@ -39,7 +48,6 @@ const registerUser = async (req, res) => {
     });
 
     if (user) {
-      
       return res.status(201).json({
         user: {
           id: user._id,
