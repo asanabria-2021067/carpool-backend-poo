@@ -263,7 +263,7 @@ const radarLocation = async (req, res) => {
         }
       },
       role: 'Conductor'
-    }).select('-password').limit(5);
+    }).select('-password');
 
     if (!users.length) {
       return res.status(404).json({ message: 'No nearby drivers found within 1 km radius' });
@@ -282,7 +282,7 @@ const radarLocation = async (req, res) => {
         .populate('driver', 'firstName lastName img')
         .populate('passengers', 'firstName lastName')
         .populate('vehicle', 'plateNumber model carImage')
-        .sort({ startTime: 2 })
+        .sort({ startTime: 1 })
         .limit(5);
 
         return { driver, trips };
