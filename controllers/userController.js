@@ -282,7 +282,7 @@ const radarLocation = async (req, res) => {
         .populate('driver', 'firstName lastName img')
         .populate('passengers', 'firstName lastName')
         .populate('vehicle', 'plateNumber model carImage')
-        .sort({ startTime: 1 })
+        .sort({ startTime: 2 })
         .limit(5);
 
         return { driver, trips };
