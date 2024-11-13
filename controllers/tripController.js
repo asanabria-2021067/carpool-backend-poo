@@ -33,25 +33,20 @@ const createTrip = async (req, res) => {
 
   console.log('Ubicación del conductor:', driver.location);  // Agregar para depuración
 
-  const [lng, lat] = driver.location.coordinates;
 
-  const startLocation = {
-    lat,
-    lng
-  };
-
-  const { endLocation, seatsAvailable, passengers } = req.body;
+  const { startLocation, endLocation, seatsAvailable, passengers, price } = req.body;
   const startTime = Date.now();
 
   try {
     const trip = await Trip.create({
       driver,
       vehicle,
-      startLocation, // Usamos la ubicación del conductor como startLocation
+      startLocation,
       endLocation,
       startTime,
       seatsAvailable,
       passengers,
+      price
     });
 
     // Agregar el viaje al historial del conductor
