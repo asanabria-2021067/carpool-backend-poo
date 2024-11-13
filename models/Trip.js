@@ -22,6 +22,7 @@ const tripSchema = new mongoose.Schema({
   }],
   securityCode: { type: Number, default: () => Math.floor(1000 + Math.random() * 9000) },
   createdAt: { type: Date, default: Date.now },
+  completed: { type: Boolean, default: false}
 });
 
 const Trip = mongoose.model('Trip', tripSchema);

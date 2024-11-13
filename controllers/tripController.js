@@ -25,6 +25,12 @@ const createTrip = async (req, res) => {
     return res.status(400).json({ message: 'The user must have the driver role' });
   }
 
+  // Verificar si el conductor tiene un viaje activo
+  const activeTrip = await Trip.findOne({ driver: id, completed: false });
+  if (activeTrip) {
+    return res.status(400).json({ message: 'You must complete your current trip before creating a new one' });
+  }
+
   // Verificar si el conductor tiene una ubicación definida
   if (!driver.location || !driver.location.coordinates || driver.location.coordinates.length !== 2) {
     console.error('Error: El conductor no tiene una ubicación válida:', driver.location);
@@ -75,7 +81,7 @@ const createTrip = async (req, res) => {
 
 const getAllTrips = async (req, res) => {
   try {
-    const trip = await Trip.find()
+    const trip = await Trip.find({completed: false})
       .populate('driver', 'firstName lastName email')
       .populate({
         path: 'vehicle',
@@ -135,6 +141,12 @@ const joinTrip = async (req, res) => {
       return res.status(400).json({ message: 'No seats available' });
     }
 
+    // Verificar si el usuario ya tiene un viaje activo
+    const activePassengerTrip = await Trip.findOne({ passengers: userId, completed: false });
+    if (activePassengerTrip) {
+      return res.status(400).json({ message: 'You cannot join more than one active trip' });
+    }
+
     // Verificar que el usuario no esté ya en la lista de pasajeros
     if (trip.passengers.includes(userId)) {
       return res.status(400).json({ message: 'User already joined the trip' });
@@ -162,7 +174,6 @@ const joinTrip = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
-
 const generateWazeLink = (lat, lng) => {
   return `https://www.waze.com/ul?ll=${lat},${lng}&navigate=yes`;
 };
@@ -240,6 +251,25 @@ const comprobatedSecurityCode = async (req, res) => {
   }
 };
 
+const completeTrip = async (req, res) => {
+  const { tripId } = req.body;
+
+  try {
+    const trip = await Trip.findById(tripId);
+
+    if (!trip) {
+      return res.status(404).json({ message: 'Trip not found' });
+    }
+
+    // Marcar el viaje como completado
+    trip.completed = true;
+    await trip.save();
+
+    res.status(200).json({ message: 'Trip completed successfully', trip });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error });
+  }
+};
 
 
 module.exports = {
@@ -248,5 +278,6 @@ module.exports = {
   joinTrip,
   getAllTrips,
   comprobatedSecurityCode,
-  sendSecurityCode
+  sendSecurityCode,
+  completeTrip
 };
