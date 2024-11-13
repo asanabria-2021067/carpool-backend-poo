@@ -106,7 +106,7 @@ const getAllTrips = async (req, res) => {
 const getTripById = async (req, res) => {
   try {
     const trip = await Trip.findById(req.params.id)
-      .populate('driver', 'firstName lastName email')
+      .populate('driver', 'firstName lastName email img')
       .populate({
         path: 'vehicle',
         populate: {
