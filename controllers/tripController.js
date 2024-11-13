@@ -128,9 +128,8 @@ const getTripById = async (req, res) => {
 
 // Unirse a un viaje
 const joinTrip = async (req, res) => {
-  const { tripId, userId } = req.body;
-
-  try {
+  const { tripId } = req.body;
+  const userId = req.usuario.id;
     const trip = await Trip.findById(tripId);
 
     if (!trip) {
@@ -170,9 +169,7 @@ const joinTrip = async (req, res) => {
     });
 
     res.json(trip);
-  } catch (error) {
-    res.status(500).json({ message: 'Server error' });
-  }
+
 };
 const generateWazeLink = (lat, lng) => {
   return `https://www.waze.com/ul?ll=${lat},${lng}&navigate=yes`;

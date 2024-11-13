@@ -8,7 +8,7 @@ const getUserTripHistory = async (req, res) => {
       .populate({
         path: 'trip',
         populate: [
-          { path: 'driver', select: 'firstName lastName email img' },
+          { path: 'user', select: 'firstName lastName email img' },
           { path: 'vehicle' },
           { path: 'passengers', select: 'firstName lastName email img' },
         ],

@@ -7,6 +7,6 @@ const { protect } = require('../middleware/authMiddleware');
 router.get('/get/trips', getAllTrips);
 router.post('/create',[protect], createTrip);
 router.get('/:id', getTripById);
-router.post('/join', joinTrip);
+router.post('/join',[protect], joinTrip);
 
 module.exports = router;
