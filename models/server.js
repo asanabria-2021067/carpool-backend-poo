@@ -9,6 +9,7 @@ const vehicleRoutes = require('../routes/vehicleRoutes');
 const tripRoutes = require('../routes/tripRoutes');
 const tripHistoryRoutes = require('../routes/tripHistoryRoutes');
 const Trip = require('../models/Trip');  // Asegúrate de tener el modelo Trip cargado
+const Chat = require('./Chat');
 
 class Server {
 
@@ -25,7 +26,8 @@ class Server {
         // Crear instancia de Socket.IO
         this.io = new SocketIOServer(this.server, {
             cors: {
-                origin: ['http://localhost:5173', 'https://carpool-app-uvg.web.app/'], // Asegúrate de que coincide con el dominio del frontend
+                origin: ['http://localhost:5173', 'https://carpool-app-uvg.web.app/'],
+                transports: ["websocket", "polling"], // Asegúrate de que coincide con el dominio del frontend
                 methods: ['GET', 'POST'],
                 credentials: true
             }
