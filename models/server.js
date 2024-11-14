@@ -88,7 +88,10 @@ class Server {
                             await chat.save();
                             console.log("Chat creado:", chat);
                         }
-                        socket.emit('joinedTrip', `Te has unido al chat del viaje ${tripId}`);
+                        socket.emit('joinedTrip', {
+                            message: `Te has unido al chat del viaje ${tripId}`,
+                            messages: chat.messages,
+                        });
                 } catch (err) {
                     console.error(err);
                     socket.emit('error', 'Error al unirse al viaje');
