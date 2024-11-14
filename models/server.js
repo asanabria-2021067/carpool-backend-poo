@@ -10,6 +10,8 @@ const tripRoutes = require('../routes/tripRoutes');
 const tripHistoryRoutes = require('../routes/tripHistoryRoutes');
 const Trip = require('../models/Trip');  // Asegúrate de tener el modelo Trip cargado
 const Chat = require('./Chat');
+const { log } = require('console');
+const User = require('./User');
 
 class Server {
 
@@ -65,65 +67,76 @@ class Server {
             console.log('Usuario conectado:', socket.id);
 
             // Unirse a una sala de viaje
-            socket.on('joinTrip', async ({ tripId, userId }) => {
-                try {
-                    const trip = await Trip.findById(tripId).populate('driver passengers');
-                    if (!trip) return socket.emit('error', 'Viaje no encontrado');
+socket.on('joinTrip', async ({ tripId, userId }) => {
+    console.log("Intentando unirse al viaje");
 
-                    const isParticipant = trip.passengers.some(p => p.equals(userId)) || trip.driver.equals(userId);
+    try {
+        const trip = await Trip.findById(tripId).populate('driver passengers');
+        console.log("Datos del viaje:", trip);
 
-                    if (isParticipant) {
-                        socket.join(tripId);  // Unirse a la sala del viaje
+        if (!trip) return socket.emit('error', 'Viaje no encontrado');
+            socket.join(tripId);  // Unirse a la sala del viaje
 
-                        // Verificar si ya existe un chat para este viaje
-                        let chat = await Chat.findOne({ tripId });
-                        if (!chat) {
-                            // Si no existe un chat, crearlo
-                            chat = new Chat({
-                                tripId,
-                                participants: [trip.driver, ...trip.passengers]
-                            });
-                            await chat.save();
-                        }
+            // Verificar si ya existe un chat para este viaje
+            let chat = await Chat.findOne({ tripId });
+            if (!chat) {
+                // Si no existe un chat, crearlo
+                chat = new Chat({
+                    tripId,
+                    participants: [trip.driver, ...trip.passengers]
+                });
+                await chat.save();
+                console.log("Chat creado:", chat);
+            }
 
-                        socket.emit('joinedTrip', `Te has unido al chat del viaje ${tripId}`);
-                    } else {
-                        socket.emit('error', 'No estás autorizado para unirte a este chat');
-                    }
-                } catch (err) {
-                    console.error(err);
-                    socket.emit('error', 'Error al unirse al viaje');
-                }
-            });
+            socket.emit('joinedTrip', `Te has unido al chat del viaje ${tripId}`);
+    } catch (err) {
+        console.error(err);
+        socket.emit('error', 'Error al unirse al viaje');
+    }
+});
+socket.on('sendMessage', async ({ tripId, userId, message }) => {
+    try {
+        const chat = await Chat.findOne({ tripId });
 
-            // Enviar mensajes a la sala y guardarlos en la base de datos
-            socket.on('sendMessage', async ({ tripId, userId, message }) => {
-                try {
-                    const chat = await Chat.findOne({ tripId });
+        if (!chat) {
+            return socket.emit('error', 'Chat no encontrado para este viaje');
+        }
+        console.log(userId);
+        const user = await User.findById(userId);
+        console.log(user);
+        
+        // Convertir el userId a ObjectId solo si es un formato válido
+        const senderId = mongoose.Types.ObjectId.isValid(userId)
+            ? new mongoose.Types.ObjectId(userId)
+            : userId;
 
-                    if (!chat) {
-                        return socket.emit('error', 'Chat no encontrado para este viaje');
-                    }
+        // Crear el nuevo mensaje con el senderId y message
+        const newMessage = {
+            sender: senderId,
+            content: message,
+            timestamp: new Date(),
+            img: user.img, 
+        };
 
-                    // Crear un nuevo mensaje
-                    const newMessage = {
-                        sender: userId,
-                        content: message,
-                        timestamp: new Date()
-                    };
+        // Agregar el mensaje al chat y guardar en la base de datos
+        chat.messages.push(newMessage);
+        await chat.save();
 
-                    // Agregar el mensaje al chat y guardar en la base de datos
-                    chat.messages.push(newMessage);
-                    await chat.save();
+        // Emitir el mensaje recibido a todos en la sala del viaje
+        this.io.to(tripId).emit('receiveMessage', {
+            userId: senderId.toString(),
+            message,
+            timestamp: new Date(),
+            img: user.img,  // Imagen del usuario que envió el mensaje
+        });
+    } catch (err) {
+        console.error(err);
+        socket.emit('error', 'Error al enviar el mensaje');
+    }
+});
 
-                    // Enviar el mensaje a todos los participantes de la sala del viaje
-                    this.io.to(tripId).emit('receiveMessage', { userId, message, timestamp: new Date() });
-                } catch (err) {
-                    console.error(err);
-                    socket.emit('error', 'Error al enviar el mensaje');
-                }
-            });
-
+            
             socket.on('disconnect', () => {
                 console.log('Usuario desconectado:', socket.id);
             });
