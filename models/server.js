@@ -11,6 +11,7 @@ const tripHistoryRoutes = require('../routes/tripHistoryRoutes');
 const Trip = require('../models/Trip');
 const Chat = require('./Chat');
 const User = require('./User');
+const { log } = require('console');
 
 dotenv.config();
 
@@ -26,14 +27,15 @@ class Server {
         this.server = http.createServer(this.app);
 
         // Configurar Socket.IO con CORS y solo WebSocket como transporte
+        
         this.io = new SocketIOServer(this.server, {
             cors: {
-                origin: "*", // Usa la URL del frontend en producción
-                methods: ['GET', 'POST'],
-                credentials: true,
+              origin: "*",
+              methods: ["GET", "POST"],
             },
-            transports: ["websocket"], // Solo WebSocket para producción
-        });
+          });
+        
+        
 
         this.middlewares();
         this.routes();
@@ -43,10 +45,7 @@ class Server {
 
     async conectarDB() {
         try {
-            await mongoose.connect(process.env.MONGO_URI, {
-                useNewUrlParser: true,
-                useUnifiedTopology: true,
-            });
+            await mongoose.connect(process.env.MONGO_URI);
             console.log('MongoDB connected');
         } catch (err) {
             console.error('MongoDB connection error:', err);
@@ -72,53 +71,62 @@ class Server {
             console.log('Usuario conectado:', socket.id);
 
             socket.on('joinTrip', async ({ tripId, userId }) => {
-                if (!tripId || !mongoose.Types.ObjectId.isValid(tripId)) {
-                    console.error('Error: tripId inválido o nulo');
-                    return socket.emit('error', 'tripId inválido');
-                }
-            
-                if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
-                    console.error('Error: userId inválido o nulo');
-                    return socket.emit('error', 'userId inválido');
-                }
-            
+                console.log("Intentando unirse al viaje");
                 try {
                     const trip = await Trip.findById(tripId).populate('driver passengers');
+                    console.log("Datos del viaje:", trip);
                     if (!trip) return socket.emit('error', 'Viaje no encontrado');
-            
-                    socket.join(tripId);
-                    let chat = await Chat.findOne({ tripId });
-                    if (!chat) {
-                        chat = new Chat({ tripId, participants: [trip.driver, ...trip.passengers] });
-                        await chat.save();
-                    }
-                    socket.emit('joinedTrip', `Te has unido al chat del viaje ${tripId}`);
+                        socket.join(tripId);  // Unirse a la sala del viaje
+                        // Verificar si ya existe un chat para este viaje
+                        let chat = await Chat.findOne({ tripId });
+                        if (!chat) {
+                            // Si no existe un chat, crearlo
+                            chat = new Chat({
+                                tripId,
+                                participants: [trip.driver, ...trip.passengers]
+                            });
+                            await chat.save();
+                            console.log("Chat creado:", chat);
+                        }
+                        socket.emit('joinedTrip', `Te has unido al chat del viaje ${tripId}`);
                 } catch (err) {
-                    console.error('Error al unirse al viaje:', err);
+                    console.error(err);
                     socket.emit('error', 'Error al unirse al viaje');
                 }
             });
-
             socket.on('sendMessage', async ({ tripId, userId, message }) => {
                 try {
                     const chat = await Chat.findOne({ tripId });
-                    if (!chat) return socket.emit('error', 'Chat no encontrado para este viaje');
-
+                    if (!chat) {
+                        return socket.emit('error', 'Chat no encontrado para este viaje');
+                    }
+                    console.log(userId);
                     const user = await User.findById(userId);
-                    const senderId = mongoose.Types.ObjectId.isValid(userId) ? mongoose.Types.ObjectId(userId) : userId;
-                    const newMessage = { sender: senderId, content: message, timestamp: new Date(), img: user.img };
-
+                    console.log(user);
+                    
+                    // Convertir el userId a ObjectId solo si es un formato válido
+                    const senderId = mongoose.Types.ObjectId.isValid(userId)
+                        ? new mongoose.Types.ObjectId(userId)
+                        : userId;
+                    // Crear el nuevo mensaje con el senderId y message
+                    const newMessage = {
+                        sender: senderId,
+                        content: message,
+                        timestamp: new Date(),
+                        img: user.img, 
+                    };
+                    // Agregar el mensaje al chat y guardar en la base de datos
                     chat.messages.push(newMessage);
                     await chat.save();
-
+                    // Emitir el mensaje recibido a todos en la sala del viaje
                     this.io.to(tripId).emit('receiveMessage', {
                         userId: senderId.toString(),
                         message,
                         timestamp: new Date(),
-                        img: user.img,
+                        img: user.img,  // Imagen del usuario que envió el mensaje
                     });
                 } catch (err) {
-                    console.error('Error al enviar el mensaje:', err);
+                    console.error(err);
                     socket.emit('error', 'Error al enviar el mensaje');
                 }
             });
@@ -128,12 +136,12 @@ class Server {
             });
         });
     }
-
     listen() {
         this.server.listen(this.port, () => {
             console.log(`Servidor corriendo en el puerto ${this.port}`);
         });
     }
+
 }
 
 module.exports = Server;
