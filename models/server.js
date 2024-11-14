@@ -3,6 +3,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const http = require('http');  // Para crear el servidor HTTP
+const https = require('https');  // Para crear el servidor HTTP
 const { Server: SocketIOServer } = require('socket.io'); // Importamos el servidor de Socket.IO
 const userRoutes = require('../routes/userRoutes');
 const vehicleRoutes = require('../routes/vehicleRoutes');
@@ -12,6 +13,7 @@ const Trip = require('../models/Trip');  // Asegúrate de tener el modelo Trip c
 const Chat = require('./Chat');
 const { log } = require('console');
 const User = require('./User');
+const fs = require('fs'); 
 
 class Server {
 
@@ -22,8 +24,13 @@ class Server {
         });
         this.port = process.env.PORT || 3000;
 
-        // Crear servidor HTTP a partir de Express
-        this.server = http.createServer(this.app);
+       // Leer los archivos de clave y certificado
+       const privateKey = fs.readFileSync('models/private_key.pem', 'utf8');
+       const certificate = fs.readFileSync('models/certificate.crt', 'utf8');
+       const credentials = { key: privateKey, cert: certificate };
+
+       // Crear servidor HTTPS usando las credenciales
+       this.server = https.createServer(credentials, this.app);
 
         // Crear instancia de Socket.IO
         this.io = new SocketIOServer(this.server, {
@@ -32,7 +39,7 @@ class Server {
                 methods: ['GET', 'POST'],
                 credentials: true,
             },
-            transports: ["polling"]
+            transports: ["websocket","polling","webtransport"]
         });
 
         this.middlewares();
