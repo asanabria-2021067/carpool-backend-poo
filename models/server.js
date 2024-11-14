@@ -31,7 +31,7 @@ class Server {
         // Crear instancia de Socket.IO
         this.io = new SocketIOServer(this.server, {
             cors: {
-                origin: ['http://localhost:5173', 'https://carpool-app-uvg.web.app'],
+                origin: 'https://carpool-app-uvg.web.app',
                 methods: ['GET', 'POST'],
                 credentials: true,
             },
