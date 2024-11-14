@@ -2,21 +2,19 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-const http = require('http');  // Para crear el servidor HTTP
-const https = require('https');  // Para crear el servidor HTTP
-const { Server: SocketIOServer } = require('socket.io'); // Importamos el servidor de Socket.IO
+const http = require('http');
+const { Server: SocketIOServer } = require('socket.io'); 
 const userRoutes = require('../routes/userRoutes');
 const vehicleRoutes = require('../routes/vehicleRoutes');
 const tripRoutes = require('../routes/tripRoutes');
 const tripHistoryRoutes = require('../routes/tripHistoryRoutes');
-const Trip = require('../models/Trip');  // Asegúrate de tener el modelo Trip cargado
+const Trip = require('../models/Trip');
 const Chat = require('./Chat');
-const { log } = require('console');
 const User = require('./User');
-const fs = require('fs'); 
+
+dotenv.config();
 
 class Server {
-
     constructor() {
         this.app = express();
         this.app.get('/', (req, res) => {
@@ -24,36 +22,40 @@ class Server {
         });
         this.port = process.env.PORT || 3000;
 
+        // Crear servidor HTTP
+        this.server = http.createServer(this.app);
 
-       // Crear servidor HTTPS usando las credenciales
-       this.server = http.createServer(this.app);
-
-        // Crear instancia de Socket.IO
+        // Configurar Socket.IO con CORS y solo WebSocket como transporte
         this.io = new SocketIOServer(this.server, {
             cors: {
-                origin: "*",
+                origin: "*", // Usa la URL del frontend en producción
                 methods: ['GET', 'POST'],
                 credentials: true,
             },
-            transports: ["polling"]
+            transports: ["websocket"], // Solo WebSocket para producción
         });
 
         this.middlewares();
         this.routes();
         this.conectarDB();
-        this.sockets();  // Inicializar los sockets
+        this.sockets(); // Inicializar los sockets
     }
 
     async conectarDB() {
-        await mongoose.connect(process.env.MONGO_URI, {
-        })
-            .then(() => console.log('MongoDB connected'))
-            .catch(err => console.error('MongoDB connection error:', err));
+        try {
+            await mongoose.connect(process.env.MONGO_URI, {
+                useNewUrlParser: true,
+                useUnifiedTopology: true,
+            });
+            console.log('MongoDB connected');
+        } catch (err) {
+            console.error('MongoDB connection error:', err);
+            process.exit(1); // Termina la app si no hay conexión
+        }
     }
 
     middlewares() {
-        // Middleware para parsear JSON
-        this.app.use(cors())
+        this.app.use(cors());
         this.app.use(express.json());
         this.app.use(express.static('public'));
     }
@@ -69,83 +71,53 @@ class Server {
         this.io.on('connection', (socket) => {
             console.log('Usuario conectado:', socket.id);
 
-            // Unirse a una sala de viaje
-socket.on('joinTrip', async ({ tripId, userId }) => {
-    console.log("Intentando unirse al viaje");
+            socket.on('joinTrip', async ({ tripId, userId }) => {
+                try {
+                    const trip = await Trip.findById(tripId).populate('driver passengers');
+                    if (!trip) return socket.emit('error', 'Viaje no encontrado');
 
-    try {
-        const trip = await Trip.findById(tripId).populate('driver passengers');
-        console.log("Datos del viaje:", trip);
+                    socket.join(tripId);
+                    let chat = await Chat.findOne({ tripId });
+                    if (!chat) {
+                        chat = new Chat({ tripId, participants: [trip.driver, ...trip.passengers] });
+                        await chat.save();
+                    }
+                    socket.emit('joinedTrip', `Te has unido al chat del viaje ${tripId}`);
+                } catch (err) {
+                    console.error('Error al unirse al viaje:', err);
+                    socket.emit('error', 'Error al unirse al viaje');
+                }
+            });
 
-        if (!trip) return socket.emit('error', 'Viaje no encontrado');
-            socket.join(tripId);  // Unirse a la sala del viaje
+            socket.on('sendMessage', async ({ tripId, userId, message }) => {
+                try {
+                    const chat = await Chat.findOne({ tripId });
+                    if (!chat) return socket.emit('error', 'Chat no encontrado para este viaje');
 
-            // Verificar si ya existe un chat para este viaje
-            let chat = await Chat.findOne({ tripId });
-            if (!chat) {
-                // Si no existe un chat, crearlo
-                chat = new Chat({
-                    tripId,
-                    participants: [trip.driver, ...trip.passengers]
-                });
-                await chat.save();
-                console.log("Chat creado:", chat);
-            }
+                    const user = await User.findById(userId);
+                    const senderId = mongoose.Types.ObjectId.isValid(userId) ? mongoose.Types.ObjectId(userId) : userId;
+                    const newMessage = { sender: senderId, content: message, timestamp: new Date(), img: user.img };
 
-            socket.emit('joinedTrip', `Te has unido al chat del viaje ${tripId}`);
-    } catch (err) {
-        console.error(err);
-        socket.emit('error', 'Error al unirse al viaje');
-    }
-});
-socket.on('sendMessage', async ({ tripId, userId, message }) => {
-    try {
-        const chat = await Chat.findOne({ tripId });
+                    chat.messages.push(newMessage);
+                    await chat.save();
 
-        if (!chat) {
-            return socket.emit('error', 'Chat no encontrado para este viaje');
-        }
-        console.log(userId);
-        const user = await User.findById(userId);
-        console.log(user);
-        
-        // Convertir el userId a ObjectId solo si es un formato válido
-        const senderId = mongoose.Types.ObjectId.isValid(userId)
-            ? new mongoose.Types.ObjectId(userId)
-            : userId;
+                    this.io.to(tripId).emit('receiveMessage', {
+                        userId: senderId.toString(),
+                        message,
+                        timestamp: new Date(),
+                        img: user.img,
+                    });
+                } catch (err) {
+                    console.error('Error al enviar el mensaje:', err);
+                    socket.emit('error', 'Error al enviar el mensaje');
+                }
+            });
 
-        // Crear el nuevo mensaje con el senderId y message
-        const newMessage = {
-            sender: senderId,
-            content: message,
-            timestamp: new Date(),
-            img: user.img, 
-        };
-
-        // Agregar el mensaje al chat y guardar en la base de datos
-        chat.messages.push(newMessage);
-        await chat.save();
-
-        // Emitir el mensaje recibido a todos en la sala del viaje
-        this.io.to(tripId).emit('receiveMessage', {
-            userId: senderId.toString(),
-            message,
-            timestamp: new Date(),
-            img: user.img,  // Imagen del usuario que envió el mensaje
-        });
-    } catch (err) {
-        console.error(err);
-        socket.emit('error', 'Error al enviar el mensaje');
-    }
-});
-
-            
             socket.on('disconnect', () => {
                 console.log('Usuario desconectado:', socket.id);
             });
         });
     }
-    
 
     listen() {
         this.server.listen(this.port, () => {
