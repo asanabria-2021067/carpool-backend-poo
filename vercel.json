@@ -8,8 +8,8 @@
     ],
     "routes": [
       {
-        "src": "/(.*)",
-        "dest": "/"
+        "src": "/socket.io/(.*)",
+        "dest": "/index.js"
       }
     ],
     "env": {

@@ -4,6 +4,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
+    "build": "vite build",
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon index.js"
   },
@@ -23,6 +24,7 @@
     "mongoose": "^8.4.5",
     "nodemon": "^3.1.4",
     "socket.io": "^4.8.0",
-    "twilio": "^5.2.2"
+    "twilio": "^5.2.2",
+    "vite": "^5.4.11"
   }
 }
