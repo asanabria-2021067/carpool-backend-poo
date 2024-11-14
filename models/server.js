@@ -35,7 +35,7 @@ class Server {
                 methods: ['GET', 'POST'],
                 credentials: true,
             },
-            transports: ["websocket","polling","webtransport"]
+            transports: ["polling"]
         });
 
         this.middlewares();
