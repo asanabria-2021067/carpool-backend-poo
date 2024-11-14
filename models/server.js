@@ -72,10 +72,20 @@ class Server {
             console.log('Usuario conectado:', socket.id);
 
             socket.on('joinTrip', async ({ tripId, userId }) => {
+                if (!tripId || !mongoose.Types.ObjectId.isValid(tripId)) {
+                    console.error('Error: tripId inválido o nulo');
+                    return socket.emit('error', 'tripId inválido');
+                }
+            
+                if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+                    console.error('Error: userId inválido o nulo');
+                    return socket.emit('error', 'userId inválido');
+                }
+            
                 try {
                     const trip = await Trip.findById(tripId).populate('driver passengers');
                     if (!trip) return socket.emit('error', 'Viaje no encontrado');
-
+            
                     socket.join(tripId);
                     let chat = await Chat.findOne({ tripId });
                     if (!chat) {
