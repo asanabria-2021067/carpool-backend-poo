@@ -282,6 +282,7 @@ const radarLocation = async (req, res) => {
       users.map(async (driver) => {
         const trips = await Trip.find({
           driver: driver._id,
+          completed: false,
           $or: [
             { startTime: { $gte: fiveHoursAgo, $lt: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1) } },
             { startTime: null }  // Esta línea permite que los conductores sin viajes activos aún aparezcan
