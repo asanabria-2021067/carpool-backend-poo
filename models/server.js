@@ -24,13 +24,9 @@ class Server {
         });
         this.port = process.env.PORT || 3000;
 
-       // Leer los archivos de clave y certificado
-       const privateKey = fs.readFileSync('models/private_key.pem', 'utf8');
-       const certificate = fs.readFileSync('models/certificate.crt', 'utf8');
-       const credentials = { key: privateKey, cert: certificate };
 
        // Crear servidor HTTPS usando las credenciales
-       this.server = https.createServer(credentials, this.app);
+       this.server = http.createServer(this.app);
 
         // Crear instancia de Socket.IO
         this.io = new SocketIOServer(this.server, {
