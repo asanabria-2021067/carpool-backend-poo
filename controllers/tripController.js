@@ -114,7 +114,7 @@ const getTripById = async (req, res) => {
           select: 'firstName lastName email',
         },
       })
-      .populate('passengers', 'firstName lastName email img');
+      .populate('passengers', 'firstName lastName email img location');
 
     if (!trip) {
       return res.status(404).json({ message: 'Trip not found' });
