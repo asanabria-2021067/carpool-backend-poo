@@ -113,10 +113,10 @@ class Server {
                         : userId;
                     // Crear el nuevo mensaje con el senderId y message
                     const newMessage = {
+                        img: user.img, 
                         sender: senderId,
                         content: message,
                         timestamp: new Date(),
-                        img: user.img, 
                     };
                     // Agregar el mensaje al chat y guardar en la base de datos
                     chat.messages.push(newMessage);
