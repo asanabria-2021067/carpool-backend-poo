@@ -98,6 +98,7 @@ class Server {
           socket.emit("joinedTrip", {
             message: `Te has unido al chat del viaje ${tripId}`,
             messages: chat.messages,
+            driver: trip.driver.img,
           });
         } catch (err) {
           console.error(err);
